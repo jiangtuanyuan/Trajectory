@@ -16,7 +16,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
             android:gravity="center"
-            android:text="地图轨迹跟踪"
+            android:text="@string/app_name"
             android:textColor="@color/white"
             android:textSize="16sp" />
 
@@ -40,14 +40,15 @@
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
         android:layout_weight="1">
 
         <com.amap.api.maps.MapView
             android:id="@+id/mapView"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
-            android:clickable="true" />
+            android:clickable="true"
+            android:focusable="true" />
 
         <Button
             android:id="@+id/bt_start"
