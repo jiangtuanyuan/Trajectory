@@ -5,12 +5,14 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.inputmethod.InputMethodManager;
 
 
 import com.kaopiz.kprogresshud.KProgressHUD;
 
 
+import org.xiaobai.trajectory.BuildConfig;
 import org.xiaobai.trajectory.R;
 
 import butterknife.ButterKnife;
@@ -54,6 +56,7 @@ public abstract class BaseActivity extends AppCompatActivity {
             mCompositeDisposable.clear();
         }
     }
+
     public CompositeDisposable getmCompositeDisposable() {
         if (mCompositeDisposable == null) {
             mCompositeDisposable = new CompositeDisposable();
@@ -161,6 +164,18 @@ public abstract class BaseActivity extends AppCompatActivity {
     public void closeProgressDialog() {
         if (kProgressHUD != null && kProgressHUD.isShowing()) {
             kProgressHUD.dismiss();
+        }
+    }
+
+    /**
+     * 显示日志
+     * DEBUG 模式下输出  release关闭
+     *
+     * @param logs
+     */
+    public void LOG(String tag, String logs) {
+        if (BuildConfig.DEBUG) {
+            Log.e(tag, logs);
         }
     }
 }

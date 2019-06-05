@@ -1,4 +1,4 @@
-package org.xiaobai.trajectory.view;
+package org.xiaobai.trajectory.view.main;
 
 import android.Manifest;
 import android.graphics.Color;
@@ -6,7 +6,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.widget.DrawerLayout;
-import android.util.Log;
+import android.view.KeyEvent;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
@@ -35,19 +35,19 @@ import org.xiaobai.utils.SPUtils;
 import org.xiaobai.utils.ToastUtil;
 
 import butterknife.BindView;
-import butterknife.ButterKnife;
 import butterknife.OnClick;
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 
-
+/**
+ * 主界面
+ * 2019-06-05
+ */
 public class MainActivity extends BaseActivity implements LocationSource, AMapLocationListener, AMap.OnMapClickListener, AMap.OnMarkerClickListener {
     @BindView(R.id.tv_top)
     TextView tvTop;
     @BindView(R.id.mapView)
     MapView mapView;
-    @BindView(R.id.nav_view)
-    NavigationView navView;
     @BindView(R.id.drawer_layout)
     DrawerLayout drawerLayout;
     @BindView(R.id.tv_info)
@@ -55,6 +55,7 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
     @BindView(R.id.bt_start)
     Button btStart;
     private String TAG = "MainActivity";
+
     //地图相关
     private AMap aMap;//地图控制器
     private OnLocationChangedListener mListener;
@@ -62,6 +63,7 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
     private AMapLocationClientOption mLocationOption;
     private AMapLocation AmapLocation;
     private UiSettings mUiSettings;
+
     //定位信息
     private Double MyLng = 0.0;//当前的
     private Double MyLat = 0.0;
@@ -75,7 +77,8 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
     private int mIsStart = 0;
     //数据库的表
     private LocationInfo mLocationInfo;
-
+    //保存的次数
+    private int mSaveNumber = 0;
 
     @Override
     protected void onResume() {
@@ -121,7 +124,6 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
     protected void initViews(Bundle savedInstanceState) {
         checkPermissions(this);
         initMap(savedInstanceState);
-
     }
 
     /**
@@ -149,7 +151,6 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
         mUiSettings.setLogoLeftMargin(-350);//设置高德地图的位置
         mUiSettings.setMyLocationButtonEnabled(true);// 设置默认定位按钮是否显示
 
-
         MyLocationStyle myLocationStyle = new MyLocationStyle(); // 自定义系统定位蓝点
         myLocationStyle.strokeColor(Color.BLACK);// 设置圆形的边框颜色
         myLocationStyle.strokeWidth(1);    //自定义精度范围的圆形边框宽度
@@ -163,8 +164,6 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
 
         aMap.setOnMapClickListener(this);
         aMap.setOnMarkerClickListener(this);
-
-        //iniLocationData();
     }
 
     /**
@@ -185,12 +184,13 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
                 MyTown = amapLocation.getDistrict();//城区信息
                 MyVillage = amapLocation.getStreet();//街道信息
                 tvInfo.setText(amapLocation.getAddress());
+
                 //这次定位与上次定位 超过10米就保存
                 float distance = AMapUtils.calculateLineDistance(new LatLng(MySLat, MySLng), new LatLng(MyLat, MyLng));
-                Log.e(TAG, "当前定位经纬度:(" + MyLng + "," + MyLat + " 上次经纬度:(" + MySLng + "," + MySLat + ")  距离:" + distance);
+                LOG(TAG, "当前定位经纬度:(" + MyLng + "," + MyLat + " 上次经纬度:(" + MySLng + "," + MySLat + ")  距离:" + distance);
                 if (distance >= 10) {
                     if (mIsStart == 1) {
-                        Log.e(TAG, "距离超过10米,并且开启了轨迹记录,保存位置点~");
+                        LOG(TAG, "距离超过10米,并且开启了轨迹记录,保存位置点~");
                         mLocationInfo = new LocationInfo();
                         mLocationInfo.setLat(MyLat + "");
                         mLocationInfo.setLng(MyLng + "");
@@ -202,7 +202,7 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
                         MySLat = MyLat;
                     }
                 } else {
-                    Log.e(TAG, "距离未超过10米,不保存位置点");
+                    LOG(TAG, "距离未超过10米,不保存位置点");
                 }
                 if (isFirstLoc) {
                     mListener.onLocationChanged(amapLocation);// 显示系统小蓝点
@@ -229,7 +229,6 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
             mlocationClient.setLocationOption(mLocationOption);
             mLocationOption.setOnceLocation(false);
             mLocationOption.setInterval(5 * 1000);
-            // 在定位结束后，在合适的生命周期调用onDestroy()方法
             // 在单次定位情况下，定位无论成功与否，都无需调用stopLocation()方法移除请求，定位sdk内部会移除
             mlocationClient.startLocation();
 
@@ -307,23 +306,30 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
         }
     }
 
-    private int mSaveNumber = 0;
 
     @OnClick(R.id.bt_start)
     public void onViewClicked() {
         if (mIsStart == 1) {
             mIsStart = 0;
-            ToastUtil.showToast("已保存" + mSaveNumber + "条轨迹记录!");
-            //已经开始了 红色
             btStart.setBackgroundResource(R.drawable.shape_start_bt_bg);
             btStart.setText("开 启 轨 迹 记 录");
+            ToastUtil.showToast("已保存" + mSaveNumber + "条轨迹记录!");
         } else {
             mIsStart = 1;
             mSaveNumber = 0;
-            ToastUtil.showToast("已开启轨迹记录!");
-            //已经开始了 红色
             btStart.setBackgroundResource(R.drawable.shape_end_bt_bg);
             btStart.setText("结 束 轨 迹 记 录");
+            ToastUtil.showToast("已开启轨迹记录!");
         }
+        //保存状态
+        SPUtils.getInstance().putInt(SPUtils.IS_START_LOCATION, mIsStart);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            moveTaskToBack(false);
+        }
+        return super.onKeyDown(keyCode, event);
     }
 }

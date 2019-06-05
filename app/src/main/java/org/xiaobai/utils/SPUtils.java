@@ -14,7 +14,7 @@ import org.xiaobai.trajectory.app.MyApp;
 public class SPUtils {
     private SharedPreferences share;
     private SharedPreferences.Editor editor;
-    private String SHARED_NAME = "phplogininfo";//sp的文件名
+    private String SHARED_NAME = "trajectory_sp";//sp的文件名
 
     private SPUtils() {
         share = MyApp.getContext().getSharedPreferences(SHARED_NAME, Context.MODE_PRIVATE);
