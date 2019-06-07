@@ -325,6 +325,12 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
         SPUtils.getInstance().putInt(SPUtils.IS_START_LOCATION, mIsStart);
     }
 
+    /**
+     * 返回键实现home键盘
+     * @param keyCode
+     * @param event
+     * @return
+     */
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {

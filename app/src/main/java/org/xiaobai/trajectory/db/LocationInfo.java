@@ -3,6 +3,7 @@ package org.xiaobai.trajectory.db;
 import org.litepal.annotation.Column;
 import org.litepal.crud.LitePalSupport;
 
+
 public class LocationInfo extends LitePalSupport {
     @Column
     private int id; //不可构造set方法 自增ID
