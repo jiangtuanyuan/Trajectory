@@ -4,11 +4,14 @@ import android.Manifest;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.design.widget.NavigationView;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.KeyEvent;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.amap.api.location.AMapLocation;
@@ -24,9 +27,12 @@ import com.amap.api.maps.UiSettings;
 import com.amap.api.maps.model.LatLng;
 import com.amap.api.maps.model.Marker;
 import com.amap.api.maps.model.MyLocationStyle;
+import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
+import org.litepal.LitePal;
 import org.xiaobai.trajectory.R;
+import org.xiaobai.trajectory.adapter.RecipeLiseAdapter;
 import org.xiaobai.trajectory.db.LocationInfo;
 import org.xiaobai.trajectory.view.base.BaseActivity;
 import org.xiaobai.utils.DateUtils;
@@ -34,8 +40,13 @@ import org.xiaobai.utils.MarqueeTextView;
 import org.xiaobai.utils.SPUtils;
 import org.xiaobai.utils.ToastUtil;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import butterknife.BindView;
+import butterknife.ButterKnife;
 import butterknife.OnClick;
+import de.hdodenhof.circleimageview.CircleImageView;
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 
@@ -54,6 +65,14 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
     MarqueeTextView tvInfo;
     @BindView(R.id.bt_start)
     Button btStart;
+    @BindView(R.id.iv_query)
+    ImageView ivQuery;
+    @BindView(R.id.cv_head_image)
+    CircleImageView cvHeadImage;
+    @BindView(R.id.recycler_view)
+    RecyclerView recyclerView;
+    @BindView(R.id.tv_latlng_number)
+    TextView tvNumber;
     private String TAG = "MainActivity";
 
     //地图相关
@@ -79,6 +98,9 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
     private LocationInfo mLocationInfo;
     //保存的次数
     private int mSaveNumber = 0;
+    //
+    private RecipeLiseAdapter mRecipeLiseAdapter;
+    private List<LocationInfo> mSumList = new ArrayList<>();//总数据
 
     @Override
     protected void onResume() {
@@ -124,7 +146,22 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
     protected void initViews(Bundle savedInstanceState) {
         checkPermissions(this);
         initMap(savedInstanceState);
+        QuerLatLngs();
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mRecipeLiseAdapter = new RecipeLiseAdapter(mSumList);
+        recyclerView.setAdapter(mRecipeLiseAdapter);
     }
+
+    /**
+     * 搜索数据库的数据
+     */
+    private void QuerLatLngs() {
+        // mSumList.addAll(LitePal.where("LIMIT 0,100").find(LocationInfo.class));
+        mSumList.addAll(LitePal.findAll(LocationInfo.class));
+        tvNumber.setText("保存的位置点:" + mSumList.size() + "条");
+        LOG("mSumList.size", mSumList.size() + "");
+    }
+
 
     /**
      * 初始化高德地图
@@ -306,27 +343,9 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
         }
     }
 
-
-    @OnClick(R.id.bt_start)
-    public void onViewClicked() {
-        if (mIsStart == 1) {
-            mIsStart = 0;
-            btStart.setBackgroundResource(R.drawable.shape_start_bt_bg);
-            btStart.setText("开 启 轨 迹 记 录");
-            ToastUtil.showToast("已保存" + mSaveNumber + "条轨迹记录!");
-        } else {
-            mIsStart = 1;
-            mSaveNumber = 0;
-            btStart.setBackgroundResource(R.drawable.shape_end_bt_bg);
-            btStart.setText("结 束 轨 迹 记 录");
-            ToastUtil.showToast("已开启轨迹记录!");
-        }
-        //保存状态
-        SPUtils.getInstance().putInt(SPUtils.IS_START_LOCATION, mIsStart);
-    }
-
     /**
      * 返回键实现home键盘
+     *
      * @param keyCode
      * @param event
      * @return
@@ -337,5 +356,34 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
             moveTaskToBack(false);
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+    @OnClick({R.id.iv_query, R.id.bt_start})
+    public void onViewClicked(View view) {
+        switch (view.getId()) {
+            case R.id.iv_query:
+                ToastUtil.showToast("查询");
+                break;
+            case R.id.bt_start:
+
+                if (mIsStart == 1) {
+                    mIsStart = 0;
+                    btStart.setBackgroundResource(R.drawable.shape_start_bt_bg);
+                    btStart.setText("开 启 轨 迹 记 录");
+                    ToastUtil.showToast("已保存" + mSaveNumber + "条轨迹记录!");
+                } else {
+                    mIsStart = 1;
+                    mSaveNumber = 0;
+                    btStart.setBackgroundResource(R.drawable.shape_end_bt_bg);
+                    btStart.setText("结 束 轨 迹 记 录");
+                    ToastUtil.showToast("已开启轨迹记录!");
+                }
+                //保存状态
+                SPUtils.getInstance().putInt(SPUtils.IS_START_LOCATION, mIsStart);
+
+                break;
+            default:
+                break;
+        }
     }
 }
