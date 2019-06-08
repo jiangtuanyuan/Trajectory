@@ -58,6 +58,12 @@ public class DateUtils {
 
     }
 
+    public static String getTime(Date date) {
+        //可根据需要自行截取数据显示
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        return format.format(date);
+    }
+
     /**
      * 获取Time
      * HH:mm
@@ -98,7 +104,6 @@ public class DateUtils {
         }
         return dayNames[c.get(Calendar.DAY_OF_WEEK) - 1];
     }
-
 
 
     /**

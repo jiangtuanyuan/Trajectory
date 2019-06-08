@@ -59,16 +59,48 @@
             android:clickable="true"
             android:focusable="true" />
 
-        <Button
-            android:id="@+id/bt_start"
-            android:layout_width="200dp"
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal|bottom"
-            android:layout_marginBottom="40dp"
-            android:background="@drawable/shape_start_bt_bg"
-            android:text="开 始 轨 迹 记 录"
-            android:textColor="@color/white"
-            android:textSize="15sp" />
+            android:layout_marginBottom="20dp"
+            android:gravity="center"
+            android:orientation="vertical">
 
+            <Button
+                android:id="@+id/bt_start"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:background="@drawable/shape_start_bt_bg"
+                android:text="开 始 轨 迹 记 录"
+                android:textColor="@color/white"
+                android:textSize="15sp" />
+
+
+            <Button
+                android:id="@+id/bt_clear"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:background="@drawable/shape_start_bt_bg"
+                android:text="清除所有标记点(2个)"
+                android:textColor="@color/white"
+                android:textSize="15sp"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/bt_clear_line"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:background="@drawable/shape_start_bt_bg"
+                android:text="清除轨迹线"
+                android:textColor="@color/white"
+                android:textSize="15sp"
+                android:visibility="gone" />
+
+        </LinearLayout>
     </FrameLayout>
 </LinearLayout>

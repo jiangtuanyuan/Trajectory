@@ -10,4 +10,5 @@
     <color name="gray_q">#cecece</color>
     <color name="red">#f60606</color>
     <color name="green">#00B050</color>
+    <color name="click_bg">#fafbfe</color>
 </resources>

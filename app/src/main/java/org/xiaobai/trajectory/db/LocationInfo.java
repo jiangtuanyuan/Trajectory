@@ -51,4 +51,15 @@ public class LocationInfo extends LitePalSupport {
     public void setTime(String time) {
         this.time = time;
     }
+
+    @Override
+    public String toString() {
+        return "{" +
+                "id=" + id +
+                ", lat='" + lat + '\'' +
+                ", lng='" + lng + '\'' +
+                ", address='" + address + '\'' +
+                ", time='" + time + '\'' +
+                '}';
+    }
 }

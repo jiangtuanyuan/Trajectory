@@ -1,9 +1,11 @@
 package org.xiaobai.trajectory.view.main;
 
 import android.Manifest;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -26,13 +28,14 @@ import com.amap.api.maps.MapView;
 import com.amap.api.maps.UiSettings;
 import com.amap.api.maps.model.LatLng;
 import com.amap.api.maps.model.Marker;
+import com.amap.api.maps.model.MarkerOptions;
 import com.amap.api.maps.model.MyLocationStyle;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import org.litepal.LitePal;
 import org.xiaobai.trajectory.R;
-import org.xiaobai.trajectory.adapter.RecipeLiseAdapter;
+import org.xiaobai.trajectory.adapter.LatLngLiseAdapter;
 import org.xiaobai.trajectory.db.LocationInfo;
 import org.xiaobai.trajectory.view.base.BaseActivity;
 import org.xiaobai.utils.DateUtils;
@@ -41,10 +44,11 @@ import org.xiaobai.utils.SPUtils;
 import org.xiaobai.utils.ToastUtil;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import butterknife.BindView;
-import butterknife.ButterKnife;
 import butterknife.OnClick;
 import de.hdodenhof.circleimageview.CircleImageView;
 import io.reactivex.Observer;
@@ -65,6 +69,8 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
     MarqueeTextView tvInfo;
     @BindView(R.id.bt_start)
     Button btStart;
+    @BindView(R.id.bt_clear)
+    Button btClear;
     @BindView(R.id.iv_query)
     ImageView ivQuery;
     @BindView(R.id.cv_head_image)
@@ -98,9 +104,13 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
     private LocationInfo mLocationInfo;
     //保存的次数
     private int mSaveNumber = 0;
-    //
-    private RecipeLiseAdapter mRecipeLiseAdapter;
+    //列表
+    private LatLngLiseAdapter mLatLngLiseAdapter;
     private List<LocationInfo> mSumList = new ArrayList<>();//总数据
+    //抽屉是否被打开
+    private boolean mIsDrawerOpen = false;
+    //地图上面的Marker 点集合
+    private Map<Integer, Marker> mMarkerMaps = new HashMap<>();
 
     @Override
     protected void onResume() {
@@ -146,20 +156,89 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
     protected void initViews(Bundle savedInstanceState) {
         checkPermissions(this);
         initMap(savedInstanceState);
-        QuerLatLngs();
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        mRecipeLiseAdapter = new RecipeLiseAdapter(mSumList);
-        recyclerView.setAdapter(mRecipeLiseAdapter);
+        mLatLngLiseAdapter = new LatLngLiseAdapter(mSumList);
+        recyclerView.setAdapter(mLatLngLiseAdapter);
+        mLatLngLiseAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
+                //添加地图的Marker 点
+                if (mMarkerMaps.get(mSumList.get(position).getId()) != null) {
+                    ToastUtil.showToast("该点已经添加到地图上了!");
+                } else {
+                    try {
+                        double lat = Double.parseDouble(mSumList.get(position).getLat());
+                        double lng = Double.parseDouble(mSumList.get(position).getLng());
+                        LatLng point = new LatLng(lat, lng);
+                        Marker marker =
+                                aMap.addMarker(new MarkerOptions().anchor(0.5f, 1)
+                                        .position(point));
+                        mMarkerMaps.put(mSumList.get(position).getId(), marker);
+                        ToastUtil.showToast("添加成功!");
+                    } catch (NumberFormatException e) {
+                        e.printStackTrace();
+                        ToastUtil.showToast("添加失败!");
+                    }
+                }
+                if (mMarkerMaps.size() != 0) {
+                    btClear.setVisibility(View.VISIBLE);
+                    btClear.setText("清除所有标记点(" + mMarkerMaps.size() + ")个");
+                } else {
+                    btClear.setVisibility(View.GONE);
+                }
+            }
+        });
+
+        //对抽屉的监听
+        drawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
+            /**
+             * 当抽屉滑动状态改变的时候被调用
+             * 状态值是STATE_IDLE（闲置--0）, STATE_DRAGGING（拖拽的--1）, STATE_SETTLING（固定--2）中之一。
+             * 抽屉打开的时候，点击抽屉，drawer的状态就会变成STATE_DRAGGING，然后变成STATE_IDLE
+             */
+            @Override
+            public void onDrawerStateChanged(int i) {
+
+            }
+
+            /**
+             * 当抽屉被滑动的时候调用此方法
+             * arg1 表示 滑动的幅度（0-1）
+             */
+            @Override
+            public void onDrawerSlide(@NonNull View view, float v) {
+
+            }
+
+            @Override
+            public void onDrawerOpened(@NonNull View view) {
+                //抽屉完全被打开
+                LOG(TAG, "抽屉打开");
+                mIsDrawerOpen = true;
+                //显示数据库的定位数据 最多100条
+                mSumList.clear();
+                QuerLatLngs();
+
+            }
+
+            @Override
+            public void onDrawerClosed(@NonNull View view) {
+                LOG(TAG, "抽屉关闭");
+                //抽屉完全被关闭
+                mIsDrawerOpen = false;
+            }
+
+        });
     }
 
     /**
      * 搜索数据库的数据
      */
     private void QuerLatLngs() {
-        // mSumList.addAll(LitePal.where("LIMIT 0,100").find(LocationInfo.class));
-        mSumList.addAll(LitePal.findAll(LocationInfo.class));
-        tvNumber.setText("保存的位置点:" + mSumList.size() + "条");
-        LOG("mSumList.size", mSumList.size() + "");
+        //降序 查询100条数据 从第的一个开始
+        mSumList.addAll(LitePal.order("id desc").limit(100).offset(0).find(LocationInfo.class));
+        tvNumber.setText("最新:" + mSumList.size() + "条");
+        mLatLngLiseAdapter.notifyDataSetChanged();
     }
 
 
@@ -191,6 +270,9 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
         MyLocationStyle myLocationStyle = new MyLocationStyle(); // 自定义系统定位蓝点
         myLocationStyle.strokeColor(Color.BLACK);// 设置圆形的边框颜色
         myLocationStyle.strokeWidth(1);    //自定义精度范围的圆形边框宽度
+        //旋转位置不移动到中心点
+        myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE_NO_CENTER);
+
 
         aMap.setLocationSource(this);// 设置定位监听
         aMap.setMyLocationEnabled(true);// 设置为true表示显示定位层并可触发定位，false表示隐藏定位层并不可触发定位，默认是false
@@ -221,7 +303,7 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
                 MyTown = amapLocation.getDistrict();//城区信息
                 MyVillage = amapLocation.getStreet();//街道信息
                 tvInfo.setText(amapLocation.getAddress());
-
+                mListener.onLocationChanged(amapLocation);// 显示系统小蓝点
                 //这次定位与上次定位 超过10米就保存
                 float distance = AMapUtils.calculateLineDistance(new LatLng(MySLat, MySLng), new LatLng(MyLat, MyLng));
                 LOG(TAG, "当前定位经纬度:(" + MyLng + "," + MyLat + " 上次经纬度:(" + MySLng + "," + MySLat + ")  距离:" + distance);
@@ -237,12 +319,18 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
                         mSaveNumber++;
                         MySLng = MyLng;
                         MySLat = MyLat;
+                        if (mIsDrawerOpen) {
+                            //添加到列表
+                            mSumList.add(mLocationInfo);
+                            mLatLngLiseAdapter.notifyDataSetChanged();
+                        }
                     }
                 } else {
                     LOG(TAG, "距离未超过10米,不保存位置点");
                 }
                 if (isFirstLoc) {
-                    mListener.onLocationChanged(amapLocation);// 显示系统小蓝点
+                    //定位到自己的位置
+                    aMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(MyLat, MyLng), 18));
                     isFirstLoc = false;
                 }
                 islocation = true;
@@ -358,14 +446,13 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
         return super.onKeyDown(keyCode, event);
     }
 
-    @OnClick({R.id.iv_query, R.id.bt_start})
+    @OnClick({R.id.iv_query, R.id.bt_start, R.id.bt_clear})
     public void onViewClicked(View view) {
         switch (view.getId()) {
             case R.id.iv_query:
-                ToastUtil.showToast("查询");
+                startActivity(new Intent(this, QueryActivity.class));
                 break;
             case R.id.bt_start:
-
                 if (mIsStart == 1) {
                     mIsStart = 0;
                     btStart.setBackgroundResource(R.drawable.shape_start_bt_bg);
@@ -380,7 +467,12 @@ public class MainActivity extends BaseActivity implements LocationSource, AMapLo
                 }
                 //保存状态
                 SPUtils.getInstance().putInt(SPUtils.IS_START_LOCATION, mIsStart);
-
+                break;
+            case R.id.bt_clear:
+                mMarkerMaps.clear();
+                aMap.clear(true);
+                ToastUtil.showToast("清除成功!");
+                btClear.setVisibility(View.GONE);
                 break;
             default:
                 break;
